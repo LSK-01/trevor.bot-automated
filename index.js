@@ -38,7 +38,7 @@ async function upload() {
 	//check if any media in GCS
 	const bucket = storage.bucket(env.bucketName);
   
-	const [files] = await bucket.getFiles({autoPaginate: false, maxResults: 1 });
+	let [files] = await bucket.getFiles({autoPaginate: false, maxResults: 1 });
 	
 	if (files.length === 0) {
 	  console.log(`Bucket ${env.bucketName} is empty.`);
@@ -47,6 +47,9 @@ async function upload() {
 		console.log('No media left');
 		return;
 	  }
+	  //query the new media uploaded
+	[files] = await bucket.getFiles({autoPaginate: false, maxResults: 1 });
+
 	} else {
 	  console.log(`Bucket ${env.bucketName} is not empty.`);
 	}

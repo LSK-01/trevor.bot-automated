@@ -9,7 +9,7 @@ async function get_token() {
 
 async function uploadToGCS(bucketName, filename, destination) {
 	// Uploads a local file to the bucket
-	await storage.bucket(bucketName).upload(path.join(tmpDir, filename), {
+	await storage.bucket(bucketName).upload(filename, {
 		destination: destination,
 		gzip: true,
 	});

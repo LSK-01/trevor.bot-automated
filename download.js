@@ -25,7 +25,7 @@ async function downloadFile(url, filename) {
 
 async function processFile(url, bucketName, filename, destination) {
 	await downloadFile(url, filename);
-	await uploadToGCS(bucketName, filename, destination);
+	await uploadToGCS(bucketName, path.join(env.tmpDir, filename), destination);
 }
 
 //returns false if no media to download
@@ -34,17 +34,17 @@ async function download() {
 	const liked = ig.feed.liked(ig.state.cookieUserId);
 	const page = await liked.items();
 
-	let lastDownload = "";
 	try {
-		lastDownload = await readGCSFile(env.bucketNameDetails, env.lastDownloadPath);
+		var lastDownload = await readGCSFile(env.bucketNameDetails, env.lastDownloadPath);
 	} catch (e) {
+    console.log('creating last download')
 		//probs needs to be created - write last liked photo as last download
     fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, page !== undefined ? page[0].id : '');
 		await uploadToGCS(env.bucketNameDetails, LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
+    return false;
 	}
 
   console.log("lastDownload: ", lastDownload);
-
 
 	//i keeps track of index we are on of urls and also if we need to paginate
 	i = 0;
@@ -52,6 +52,11 @@ async function download() {
 	if (page.length == 0) {
 		return false;
 	}
+
+  //write the new lastDownload.txt first - incase we only manage to download some items, at least we dont repost any shit next time round
+  fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, page[0].id);
+	await uploadToGCS(env.bucketNameDetails,LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
+  console.log('lastDownload updated:');
 
 	let processingPromises = [];
 	//get all items and download/upload up to lastDownload
@@ -128,10 +133,6 @@ async function download() {
 
 	await Promise.all(processingPromises);
 
-	lastDownload = page[--i].id;
-  fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, lastDownload);
-	await uploadToGCS(env.bucketNameDetails,LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
-
-	return true;
+	return true;  
 }
 module.exports = download;
