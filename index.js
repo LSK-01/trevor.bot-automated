@@ -57,12 +57,11 @@ async function upload() {
 	const file = files[0];
 	let deleteFiles = [];
 	mediaInfo.creds = file.name.split("+")[1];
-	let folder;
 	//if carousel special treatment
 	if(file.name.includes("/")){
 		mediaInfo.type = 8;
 		//get the 'folder' name
-		folder = file.name.split("/")[0];
+		let [folder] = file.name.split("/");
 		//get all other media in that folder
 		const [folderFiles] = await bucket.getFiles({prefix: folder});
 		const urls = folderFiles.map(file => 
@@ -105,7 +104,7 @@ async function upload() {
 	let caption =
 		"stolen from @" +
 		mediaInfo.creds +
-		". trevor.bot has been recently rebuilt, please be patient with any bugs. thank you for your support!";
+		". Automated meme rating/captioning coming soon!";
 
 	let container;
 	let containerID;
