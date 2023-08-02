@@ -19,18 +19,6 @@ let access_token = "";
 let containerPrepend = env.graph_api_url_prepend + env.insta_id + "/media";
 let publishContainerPrepend = env.graph_api_url_prepend + env.insta_id + "/media_publish";
 
-//upload() works as follows
-//1. Choose a random file from the media folder
-//1a. If the media folder is empty, download more media using the unofficial API
-//1b. Formulate the caption
-//2. Upload it to cloudinary
-//3. Upload it to instagram
-//3a. We produce a container for the piece of content
-//3b. wait for the container to be ready
-//3c. then publish the container
-//4. Delete the file from the media folder
-//4. Destroy the file from cloudinary
-
 async function upload() {
 	access_token = await get_token();
 	let mediaInfo = {};
@@ -54,9 +42,10 @@ async function upload() {
 	  console.log(`Bucket ${env.bucketName} is not empty.`);
 	}
 
-	const file = files[0];
+	const [file] = files;
 	let deleteFiles = [];
-	mediaInfo.creds = file.name.split("+")[1];
+	let fileIndex;
+	[, fileIndex, mediaInfo.creds] = file.name.split("-");
 	//if carousel special treatment
 	if(file.name.includes("/")){
 		mediaInfo.type = 8;
@@ -258,3 +247,7 @@ async function statusCheck(containerID) {
 		},
 	});
 }
+
+
+//TODO REMOVE
+(async() => {await upload()})();

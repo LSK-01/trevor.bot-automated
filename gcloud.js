@@ -14,7 +14,7 @@ async function uploadToGCS(bucketName, filePath, destination) {
 		gzip: true,
 	});
 
-	console.log(`${filename} uploaded to ${bucketName}/${destination}.`);
+	console.log(`${filePath} uploaded to ${bucketName}/${destination}.`);
 }
 
 async function readGCSFile(bucketName, fileName) {
