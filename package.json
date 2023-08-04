@@ -16,7 +16,9 @@
     "axios": "^1.4.0",
     "fluent-ffmpeg": "^2.1.2",
     "instagram-private-api": "^1.45.3",
-    "nodemailer": "^6.9.4"
+    "nodemailer": "^6.9.4",
+    "openai": "^3.3.0",
+    "p-limit": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6"

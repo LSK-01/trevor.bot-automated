@@ -3,15 +3,15 @@ const env = require("./env");
 const path = require("path");
 const download = require("./download");
 const sendEmail = require("./email");
-const {deleteFile, storage, get_token} = require("./gcloud");
+const { deleteFile, storage, get_token, readGCSFile } = require("./gcloud");
+const { genCaption } = require("./captionGeneration");
 
 exports.uploadPubSub = async (event, context) => {
-	try{
+	try {
 		await upload();
-	}
-	catch(e){
-		console.log("error: ", e.message)
-		await sendEmail("Error uploading: " + e.message)
+	} catch (e) {
+		console.log("error: ", e.message);
+		await sendEmail("Error uploading: " + e.message);
 	}
 };
 
@@ -19,65 +19,77 @@ let access_token = "";
 let containerPrepend = env.graph_api_url_prepend + env.insta_id + "/media";
 let publishContainerPrepend = env.graph_api_url_prepend + env.insta_id + "/media_publish";
 
+async function createCaption(carouselFolder, index) {
+	let prompt = await readGCSFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`));
+	let caption = await genCaption(prompt);
+	return caption;
+}
+
 async function upload() {
 	access_token = await get_token();
 	let mediaInfo = {};
-	console.log('dfuk');
 	//check if any media in GCS
 	const bucket = storage.bucket(env.bucketName);
-  
-	let [files] = await bucket.getFiles({autoPaginate: false, maxResults: 1 });
-	
-	if (files.length === 0) {
-	  console.log(`Bucket ${env.bucketName} is empty.`);
-	  const dlResult = await download();
-	  if(!dlResult){
-		console.log('No media left');
-		return;
-	  }
-	  //query the new media uploaded
-	[files] = await bucket.getFiles({autoPaginate: false, maxResults: 1 });
 
+	let [files] = await bucket.getFiles({ autoPaginate: false, maxResults: 1 });
+
+	if (files.length === 0) {
+		console.log(`Bucket ${env.bucketName} is empty.`);
+		const dlResult = await download();
+		if (!dlResult) {
+			console.log("No media left");
+			return;
+		}
+		//i have absoultely no idea why we cant query media after, but it just causes it to not wait for download() at all.. gpt-4 and me cant figure ito ut
+		//query the new media uploaded
+		[files] = await bucket.getFiles({ autoPaginate: false, maxResults: 1 });
 	} else {
-	  console.log(`Bucket ${env.bucketName} is not empty.`);
+		console.log(`Bucket ${env.bucketName} is not empty.`);
 	}
 
 	const [file] = files;
 	let deleteFiles = [];
 	let fileIndex;
+	let carouselFolder = "";
 	[, fileIndex, mediaInfo.creds] = file.name.split("-");
 	//if carousel special treatment
-	if(file.name.includes("/")){
+	if (file.name.includes("/")) {
 		mediaInfo.type = 8;
-		//get the 'folder' name
-		let [folder] = file.name.split("/");
-		//get all other media in that folder
-		const [folderFiles] = await bucket.getFiles({prefix: folder});
-		const urls = folderFiles.map(file => 
-			{deleteFiles.push(file.name);
-			return `${env.GCSUrl}${env.bucketName}/${file.name}`});
+
+		[carouselFolder] = file.name.split("/");
+
+		const [folderFiles] = await bucket.getFiles({ prefix: carouselFolder });
+		//sometimes order matters in carousel
+		folderFiles.sort((a, b) => Number(path.parse(a.name).name) - Number(path.parse(b.name).name));
+
+		//prompt will be in carouselfolder/firstcarouselmediaindex.txt
+		[, fileIndex] = folderFiles[0].name.split("-");
+
+		const urls = folderFiles.map((file) => {
+			deleteFiles.push(file.name);
+			return `${env.GCSUrl}${env.bucketName}/${file.name}`;
+		});
 
 		let value = [];
-		urls.map(url => {
+		urls.map((url) => {
 			const urlObj = new URL(url);
-			switch(path.extname(urlObj.pathname)){
+			switch (path.extname(urlObj.pathname)) {
 				case ".jpg":
-					value.push({type: 1, value: url});
+					value.push({ type: 1, value: url });
 					break;
 				case ".mp4":
-					value.push({type: 2, value: url});
+					value.push({ type: 2, value: url });
 					break;
 				default:
-					throw new Error("Unknown media type in carousel")
+					throw new Error("Unknown media type in carousel");
 			}
-		})
+		});
 
 		mediaInfo.value = value;
-	}
-	else{
+	} else {
 		deleteFiles.push(file.name);
 		const url = `${env.GCSUrl}${env.bucketName}/${file.name}`;
-		switch(path.extname(file.name)){
+		switch (path.extname(file.name)) {
 			case ".jpg":
 				mediaInfo.type = 1;
 				break;
@@ -85,15 +97,13 @@ async function upload() {
 				mediaInfo.type = 2;
 				break;
 			default:
-				throw new Error("Unknown media type")
+				throw new Error("Unknown media type");
 		}
 		mediaInfo.value = url;
 	}
 
 	let caption =
-		"stolen from @" +
-		mediaInfo.creds +
-		". Automated meme rating/captioning coming soon!";
+		"stolen from @" + mediaInfo.creds + ". trevor says: " + (await createCaption(carouselFolder, fileIndex));
 
 	let container;
 	let containerID;
@@ -139,8 +149,7 @@ async function upload() {
 
 			break;
 		case 8:
-			const containerPromises = mediaInfo.value.map(async ({type, value}) => {
-
+			const containerPromises = mediaInfo.value.map(async ({ type, value }) => {
 				switch (type) {
 					case 1:
 						return await axios.post(
@@ -154,7 +163,7 @@ async function upload() {
 								},
 							}
 						);
-					
+
 					case 2:
 						return await axios.post(
 							containerPrepend,
@@ -169,7 +178,7 @@ async function upload() {
 							}
 						);
 					default:
-						throw new Error("Unknown media type in carousel")
+						throw new Error("Unknown media type in carousel");
 				}
 			});
 
@@ -232,8 +241,7 @@ async function waitForContainer(containerID) {
 
 		status = await statusCheck(containerID);
 
-		console.log(status); // Log the entire response
-		console.log(containerID); // Log the container ID
+		console.log(containerID, containerStatus); // Log the container ID
 
 		containerStatus = status.data.status_code;
 	}
@@ -248,6 +256,6 @@ async function statusCheck(containerID) {
 	});
 }
 
-
-//TODO REMOVE
-(async() => {await upload()})();
+/* (async () => {
+	await upload();
+})(); */
