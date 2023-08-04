@@ -38,11 +38,11 @@ async function upload() {
 		const dlResult = await download();
 		if (!dlResult) {
 			console.log("No media left");
-			return;
 		}
+		return;
 		//i have absoultely no idea why we cant query media after, but it just causes it to not wait for download() at all.. gpt-4 and me cant figure ito ut
 		//query the new media uploaded
-		[files] = await bucket.getFiles({ autoPaginate: false, maxResults: 1 });
+	/* 	[files] = await bucket.getFiles({ autoPaginate: false, maxResults: 1 }); */
 	} else {
 		console.log(`Bucket ${env.bucketName} is not empty.`);
 	}

@@ -69,7 +69,7 @@ async function processResponseItems(mediaItems, isCarousel, numItems) {
 		item = mediaItems[i];
 
 		//set values accordingly
-		username = isCarousel ? carouselUsername : item.user.username;
+		username = isCarousel ? carouselUsername : item.user?.username || "";
 		caption = isCarousel ? carouselCaption : item.caption?.text || "";
 
 		switch (item.media_type) {
@@ -151,13 +151,14 @@ async function download() {
 	}
 	i--;
 
+	console.log('page[i]: ', page[i].user.username, page[i].caption?.text, page[i].media_type, page[i].id);
+	//lets just pass one - way too many network calls otheriwes and node starts complaining
+	await processResponseItems([page[i]], false, 1);
+
 	//TODO
 	fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, page[i].id);
 	await uploadToGCS(env.bucketNameDetails, LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
-	console.log("lastDownload updated:");
-
-	//lets just pass one - way too many network calls otheriwes and node starts complaining
-	await processResponseItems([page[i]], page[i].media_type == 8, 1);
+	console.log("lastDownload updated: ", page[i].id);
 
 	return true;
 }

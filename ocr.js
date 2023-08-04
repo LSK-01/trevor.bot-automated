@@ -13,7 +13,7 @@ async function extractText(filePath) {
 	const [result] = await client.textDetection(filePath);
 	const [detections] = result.textAnnotations;
 	console.log("Text:");
-	console.log('detections: ', detections.description);
+	console.log(detections.description);
     return detections.description;
 }
 
