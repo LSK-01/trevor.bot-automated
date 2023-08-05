@@ -5,9 +5,6 @@ const { uploadToGCS, readGCSFile } = require("./gcloud");
 const { IgApiClient, IgLoginRequiredError } = require("instagram-private-api");
 
 const SESSION_FILE_PATH = path.join(env.tmpDir, env.sessionPath);
-console.log("session path: ", SESSION_FILE_PATH);
-console.log("tmpdir: ", env.tmpDir);
-console.log("session path env: ", env.sessionPath);
 
 const ig = new IgApiClient();
 

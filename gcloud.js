@@ -27,13 +27,13 @@ async function readGCSFile(bucketName, fileName) {
 	return text;
 }
 
-async function deleteFile(fileName) {
-	const bucket = storage.bucket(env.bucketName);
+async function deleteFile(bucketName, fileName) {
+	const bucket = storage.bucket(bucketName);
 	const file = bucket.file(fileName);
   
 	await file.delete();
   
-	console.log(`File ${fileName} deleted from ${env.bucketName}.`);
+	console.log(`File ${fileName} deleted from ${bucketName}.`);
   }
 
 

@@ -8,13 +8,15 @@ const client = new vision.ImageAnnotatorClient({
 });
 
 async function extractText(filePath) {
-
 	// Read the image file
 	const [result] = await client.textDetection(filePath);
 	const [detections] = result.textAnnotations;
 	console.log("Text:");
+	if (detections === undefined) {
+		return "";
+	}
 	console.log(detections.description);
-    return detections.description;
+	return detections.description;
 }
 
 async function captureFrame(filePath, time) {
@@ -37,4 +39,4 @@ async function captureFrame(filePath, time) {
 	});
 }
 
-module.exports = {extractText, captureFrame}
+module.exports = { extractText, captureFrame };

@@ -27,29 +27,36 @@ async function extractAudio(filePath) {
 const client = new speech.SpeechClient();
 
 async function audioToText(filePath) {
-	// Reads a local audio file and converts it to base64
-	const file = fs.readFileSync(filePath);
-	const audioBytes = file.toString("base64");
+	//10MB limit uploading from a local file for gcloud text to speech. should never reach this limit (i think the most .wav can ever be with insta video limits is 10.35...), 
+	//Using a uri just doesn't fucking work and im 99% sure its just google's client library is fucked
+    // Reads a local audio file and converts it to base64
+    const file = fs.readFileSync(filePath);
+    const audioBytes = file.toString("base64");
 
-	// The audio file's encoding, sample rate in hertz, and BCP-47 language code
-	const audio = {
-		content: audioBytes,
-	};
-	const config = {
-		encoding: "LINEAR16",
-		sampleRateHertz: 44100,
-		languageCode: "en-US",
-	};
-	const request = {
-		audio: audio,
-		config: config,
-	};
+    // The audio file's encoding, sample rate in hertz, and BCP-47 language code
+    const audio = {
+        content: audioBytes,
+    };
+    const config = {
+        encoding: "LINEAR16",
+        sampleRateHertz: 44100,
+        languageCode: "en-US",
+    };
+    const request = {
+        audio: audio,
+        config: config,
+    };
 
-	// Detects speech in the audio file
-	const [response] = await client.recognize(request);
-	const transcription = response.results.map((result) => result.alternatives[0].transcript).join("\n");
-	console.log(`Transcription: ${transcription}`);
-	return transcription;
+    // Detects speech in the audio file
+    const [operation] = await client.longRunningRecognize(request);
+    const [response] = await operation.promise();
+    const transcription = response.results.map((result) => result.alternatives[0].transcript).join("\n");
+    console.log(`Transcription: ${transcription}`);
+    return transcription;
 }
 
+/* (async () => {
+	await audioToText("tmp/test.wav");
+})();
+ */
 module.exports = { extractAudio, audioToText };

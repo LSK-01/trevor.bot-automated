@@ -151,15 +151,21 @@ async function download() {
 	}
 	i--;
 
-	console.log('page[i]: ', page[i].user.username, page[i].caption?.text, page[i].media_type, page[i].id);
-	//lets just pass one - way too many network calls otheriwes and node starts complaining
-	await processResponseItems([page[i]], false, 1);
+	console.log("page[i]: ", page[i].user.username, page[i].caption?.text, page[i].media_type, page[i].id);
 
+	//better to skip a meme than double post a meme
 	//TODO
 	fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, page[i].id);
 	await uploadToGCS(env.bucketNameDetails, LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
 	console.log("lastDownload updated: ", page[i].id);
 
+	//lets just pass one - way too many network calls otheriwes and node starts complaining
+	try{
+		await processResponseItems([page[i]], false, 1);
+	}
+	catch(e){
+		console.log("error processing response items: ", e.message);
+	}
 	return true;
 }
 //TODO

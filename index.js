@@ -20,9 +20,16 @@ let containerPrepend = env.graph_api_url_prepend + env.insta_id + "/media";
 let publishContainerPrepend = env.graph_api_url_prepend + env.insta_id + "/media_publish";
 
 async function createCaption(carouselFolder, index) {
-	let prompt = await readGCSFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`));
-	let caption = await genCaption(prompt);
-	return caption;
+	try{
+		let prompt = await readGCSFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`));
+		let caption = await genCaption(prompt);
+		
+		await deleteFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`))
+		return caption;
+	}
+	catch{
+		return "";
+	}
 }
 
 async function upload() {
@@ -214,7 +221,7 @@ async function upload() {
 	}
 
 	//delete files from GCS
-	await Promise.all(deleteFiles.map(async (file) => deleteFile(file)));
+	await Promise.all(deleteFiles.map(async (file) => deleteFile(env.bucketName, file)));
 }
 
 async function publishContainer(containerID) {
@@ -258,4 +265,5 @@ async function statusCheck(containerID) {
 
 /* (async () => {
 	await upload();
-})(); */
+})();
+ */
