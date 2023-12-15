@@ -5,6 +5,7 @@ const download = require("./download");
 const sendEmail = require("./email");
 const { deleteFile, storage, get_token, readGCSFile } = require("./gcloud");
 const { genCaption } = require("./captionGeneration");
+const { refresh } = require("./refreshtoken");
 
 exports.uploadPubSub = async (event, context) => {
 	try {
@@ -12,6 +13,15 @@ exports.uploadPubSub = async (event, context) => {
 	} catch (e) {
 		console.log("error: ", e.message);
 		await sendEmail("Error uploading: " + e.message);
+	}
+};
+
+exports.refreshPubSub = async (event, context) => {
+	try {
+		await refresh();
+	} catch (e) {
+		console.log("error: ", e.message);
+		await sendEmail("Error refreshing token: " + e.message);
 	}
 };
 
@@ -24,7 +34,7 @@ async function createCaption(carouselFolder, index) {
 		let prompt = await readGCSFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`));
 		let caption = await genCaption(prompt);
 		
-		await deleteFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`))
+		//await deleteFile(env.bucketNameMemeData, path.join(carouselFolder, `${index}.txt`))
 		return caption;
 	}
 	catch{
@@ -44,8 +54,9 @@ async function upload() {
 		console.log(`Bucket ${env.bucketName} is empty.`);
 		const dlResult = await download();
 		if (!dlResult) {
-			console.log("No media left");
+			console.log("No media left/session wasn't originally present");
 		}
+		console.log("Downloaded media, will upload next run.");
 		return;
 		//i have absoultely no idea why we cant query media after, but it just causes it to not wait for download() at all.. gpt-4 and me cant figure ito ut
 		//query the new media uploaded
@@ -110,7 +121,7 @@ async function upload() {
 	}
 
 	let caption =
-		"stolen from @" + mediaInfo.creds + ". trevor says: " + (await createCaption(carouselFolder, fileIndex));
+		"🤖: " + (await createCaption(carouselFolder, fileIndex)) + ".\n Comment what yall think of this shii' 🤨🤩😐💬?\n YOU 🫵 - Follow for more 🥦 high quality memes and ⚡ zinger captions, posted 🆓 of ads.\n\n\n\n🥷 Stolen from @" + mediaInfo.creds + "\n\n📨 DM if you are interested in 🦾 automating your own account!";
 
 	let container;
 	let containerID;
@@ -244,7 +255,7 @@ async function waitForContainer(containerID) {
 	containerStatus = status.data.status_code;
 
 	while (containerStatus === "IN_PROGRESS") {
-		await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5 seconds before checking status again
+		await new Promise((resolve) => setTimeout(resolve, 4000)); // wait 5 seconds before checking status again
 
 		status = await statusCheck(containerID);
 
@@ -265,5 +276,4 @@ async function statusCheck(containerID) {
 
 /* (async () => {
 	await upload();
-})();
- */
+})(); */

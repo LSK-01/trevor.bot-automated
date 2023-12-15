@@ -48,7 +48,6 @@ async function extractInfo(bucketName, mediaPath, infoPath, caption) {
 	await uploadToGCS(bucketName, downloadDest, infoPath);
 }
 
-let processPromises = [];
 let index = 0;
 let firstCarouselMedia = false;
 let carouselFolder = "";
@@ -66,6 +65,7 @@ async function processResponseItems(mediaItems, isCarousel, numItems) {
 	let item;
 
 	for (let i = 0; i < numItems; i++) {
+		console.log("numItems: " ,numItems)
 		item = mediaItems[i];
 
 		//set values accordingly
@@ -85,11 +85,13 @@ async function processResponseItems(mediaItems, isCarousel, numItems) {
 				url = item.image_versions2.candidates[0].url;
 				downloadDest = `${index}.jpg`;
 				uploadDest = path.join(carouselFolder, `-${index}-${username}-.jpg`);
+				console.log("this is a image");
 				break;
 			case 2:
 				uploadDest = path.join(carouselFolder, `-${index}-${username}-.mp4`);
 				downloadDest = `${index}.mp4`;
 				url = item.video_versions[0].url;
+				console.log("this is a video")
 				break;
 		}
 
@@ -104,6 +106,8 @@ async function processResponseItems(mediaItems, isCarousel, numItems) {
 				: Promise.resolve(),
 		]);
 
+		console.log("dowloaded somithng");
+
 		//if we are in a carousel and weve already processed firstCarouselMedia
 		if (firstCarouselMedia) {
 			firstCarouselMedia = false;
@@ -117,17 +121,21 @@ async function processResponseItems(mediaItems, isCarousel, numItems) {
 //returns false if no media to download
 async function download() {
 	const ig = await login();
+	if(ig === undefined){
+		return false;
+	}
 	const liked = ig.feed.liked(ig.state.cookieUserId);
 	const page = await liked.items();
 
+	let lastDownload;
 	try {
-		var lastDownload = await readGCSFile(env.bucketNameDetails, env.lastDownloadPath);
+		lastDownload = await readGCSFile(env.bucketNameDetails, env.lastDownloadPath);
 	} catch (e) {
 		console.log("creating last download");
 		//probs needs to be created - write last liked photo as last download
-		fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL, page !== undefined ? page[0].id : "");
+		lastDownload = page !== undefined ? page[0].id : "";
+		fs.writeFileSync(LASTDOWNLOAD_PATH_LOCAL,	lastDownload );
 		await uploadToGCS(env.bucketNameDetails, LASTDOWNLOAD_PATH_LOCAL, env.lastDownloadPath);
-		return false;
 	}
 
 	console.log("lastDownload old: ", lastDownload);
@@ -135,7 +143,7 @@ async function download() {
 	//i keeps track of index we are on of urls and also if we need to paginate
 	i = 0;
 
-	if (page.length == 0 || page[i].id == lastDownload) {
+	if (page.length == 0 || page[0].id == lastDownload) {
 		return false;
 	}
 
@@ -149,6 +157,7 @@ async function download() {
 			page.push(...nextPage);
 		}
 	}
+	//TODO
 	i--;
 
 	console.log("page[i]: ", page[i].user.username, page[i].caption?.text, page[i].media_type, page[i].id);

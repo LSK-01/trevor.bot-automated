@@ -15,9 +15,9 @@ async function sendEmail(message){
         to: "sarifluca.dev@example.com", // list of receivers
         subject: message, // Subject line
         text: "wah waah", // plain text body
-      }); */
+      });
 
-      return;
+      return; */
 }
 
 module.exports = sendEmail;

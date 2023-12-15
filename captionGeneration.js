@@ -8,8 +8,8 @@ const configuration = new Configuration({
 async function genCaption(prompt){
     const openai = new OpenAIApi(configuration);
     const chat_completion = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
+        model: "gpt-4-1106-preview",
+        messages: [{ role: "user", content: prompt }]
     });
     let message = chat_completion.data.choices[0].message?.content;
     console.log('chat completion: ', message); 
@@ -22,5 +22,6 @@ async function genCaption(prompt){
     }
 
 })();
- */
+  */
+
 module.exports = {genCaption}

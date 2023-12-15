@@ -19,7 +19,8 @@ async function login() {
 		//probs needs to be created
 		console.log("creating sesssion");
 		await rewriteSession();
-		return;
+		//just so we dont get caught in a loop if read never goes well for some reason
+		return undefined;
 	}
 
 	await ig.state.deserialize(JSON.parse(savedState));
@@ -50,7 +51,6 @@ async function rewriteSession() {
 
 	await ig.account.login(env.username, env.password);
 	// After logging in, simulate some of the requests the Instagram app would make
-	//process.nextTick(async () => await ig.simulate.postLoginFlow());
 
 	const serializedState = await ig.state.serialize();
 	delete serializedState.constants;
