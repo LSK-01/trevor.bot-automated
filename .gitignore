@@ -1,0 +1,12 @@
+env.js
+node_modules
+access_token.txt
+package-lock.json
+session.json
+media
+captions
+trevorbot-pk-gcs.json
+.gcloudignore
+trevorbot-key-gc.json
+tmp
+lastDownload.txt
